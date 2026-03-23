@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ACL Recovery</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0b;--sf:#111113;--sf2:#18181c;--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);--tx:#f0ede8;--mu:#6b6a72;--mu2:#9998a3;--ac:#e8ff47;--ac2:#b8cc30;--gn:#3ddc84;--am:#ffb347;--bl:#5b9cf6}
+body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;font-size:15px;line-height:1.6;min-height:100vh}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+header{padding:32px 0 24px;border-bottom:1px solid var(--bd);margin-bottom:26px;display:flex;align-items:flex-end;justify-content:space-between}
+.logo-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--ac);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:4px}
+.logo-h{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;line-height:1}
+.hright{text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);line-height:2}
+.hright b{color:var(--mu2);font-weight:400}
+nav{display:flex;gap:4px;margin-bottom:26px;border-bottom:1px solid var(--bd)}
+.nb{background:none;border:none;color:var(--mu);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.nb:hover{color:var(--tx)}.nb.on{color:var(--ac);border-bottom-color:var(--ac)}
+.tab{display:none}.tab.on{display:block}
+.today-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:22px}
+.tc-top{padding:18px 20px 14px;border-bottom:1px solid var(--bd);background:linear-gradient(180deg,rgba(232,255,71,.04) 0%,transparent 100%)}
+.tc-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ac);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.tc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.tc-title{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900}
+.tc-dur{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu2);background:var(--sf2);border:1px solid var(--bd2);border-radius:6px;padding:4px 10px}
+.sess-pick{display:flex;gap:8px}
+.spb{flex:1;padding:9px 8px;border-radius:8px;border:1px solid var(--bd2);background:var(--sf2);color:var(--mu2);font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
+.spb:hover{color:var(--tx)}.spb.sel-a{background:rgba(232,255,71,.1);border-color:var(--ac);color:var(--ac)}.spb.sel-b{background:rgba(91,156,246,.1);border-color:var(--bl);color:var(--bl)}.spb.sel-r{background:rgba(107,106,114,.1);border-color:var(--mu2);color:var(--mu2)}
+.sec-block{padding:16px 20px;border-bottom:1px solid var(--bd)}
+.sec-block:last-child{border-bottom:none}
+.sec-lbl{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec-lbl.gym{color:var(--gn)}.sec-lbl.pistol-lbl{color:var(--ac)}
+.sec-lbl .est{margin-left:auto;color:var(--mu);font-size:10px}
+.witem{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.witem:last-child{border-bottom:none}
+.wcheck{width:22px;height:22px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px;transition:all .15s;user-select:none}
+.wcheck:hover{border-color:var(--ac)}.wcheck.done{background:var(--gn);border-color:var(--gn);color:#0a0a0b;font-weight:700}
+.wbody{flex:1;min-width:0}
+.wname{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px}
+.wsets{font-family:'DM Mono',monospace;font-size:11px;color:var(--ac);margin-bottom:5px}
+.wdesc{font-size:12px;color:var(--mu2);line-height:1.55}
+.wcue{font-size:11px;color:var(--mu);font-style:italic;margin-top:5px;padding-top:5px;border-top:1px solid var(--bd)}
+.wtag{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px;margin-top:5px}
+.wtag.left{background:rgba(232,255,71,.08);color:var(--ac)}.wtag.both{background:rgba(91,156,246,.08);color:var(--bl)}.wtag.pt{background:rgba(232,255,71,.06);color:var(--ac)}
+.prog-foot{display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--sf2);border-top:1px solid var(--bd)}
+.ring{position:relative;width:46px;height:46px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg)}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500}
+.ring-done{font-size:14px;font-weight:700;color:var(--tx)}
+.ring-sub{font-size:12px;color:var(--mu2)}
+.log-btn{background:var(--ac);color:#0a0a0b;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:9px 18px;cursor:pointer;transition:background .15s;white-space:nowrap;margin-left:auto}
+.log-btn:hover{background:var(--ac2)}.log-btn:disabled{background:var(--sf);color:var(--mu);cursor:default;border:1px solid var(--bd)}
+.rest-msg{padding:32px 20px;text-align:center}
+.rest-msg h3{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;margin-bottom:8px}
+.rest-msg p{font-size:13px;color:var(--mu2);max-width:400px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.gn::before{background:var(--gn)}.stat.am::before{background:var(--am)}.stat.bl::before{background:var(--bl)}.stat.ac::before{background:var(--ac)}
+.stat-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1}
+.stat-sub{font-size:11px;color:var(--mu);margin-top:3px}
+.pbar-block{margin-bottom:15px}
+.pbar-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.pbar-name{color:var(--tx);font-weight:500}.pbar-num{font-family:'DM Mono',monospace;color:var(--mu2);font-size:12px}
+.bar{height:6px;background:var(--sf2);border-radius:3px;overflow:hidden;border:1px solid var(--bd)}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.fill-gn{background:var(--gn)}.fill-am{background:var(--am)}.fill-bl{background:var(--bl)}
+.sec-h{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+hr.div{border:none;border-top:1px solid var(--bd);margin:20px 0}
+.input-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.field label{display:block;font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.field input{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);font-family:'DM Mono',monospace;font-size:22px;font-weight:500;padding:9px 13px;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--ac)}
+.btn{background:var(--ac);color:#0a0a0b;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:10px 22px;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--ac2)}
+.btn-ghost{background:transparent;color:var(--mu2);border:1px solid var(--bd2)}
+.btn-ghost:hover{background:var(--sf2);color:var(--tx)}
+.p10{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.pbox{width:40px;height:40px;border-radius:8px;border:1px solid var(--bd2);background:var(--sf2);color:var(--mu);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none}
+.pbox:hover{border-color:var(--ac);color:var(--ac)}.pbox.lit{background:rgba(232,255,71,.1);border-color:var(--ac);color:var(--ac)}
+.tl{position:relative;padding-left:22px}
+.tl::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:1px;background:var(--bd2)}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-dot{position:absolute;left:-18px;top:4px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bd2);background:var(--bg)}
+.tl-dot.done{border-color:var(--gn);background:var(--gn)}.tl-dot.now{border-color:var(--ac);background:var(--ac)}.tl-dot.goal{border-color:var(--am);background:var(--am)}
+.tl-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu)}
+.tl-title{font-size:14px;font-weight:600;color:var(--tx);margin:2px 0}
+.tl-sub{font-size:12px;color:var(--mu)}
+.phase{background:var(--sf2);border-radius:10px;margin-bottom:9px;border-left:3px solid var(--bd2);overflow:hidden}
+.phase.active-phase{border-left-color:var(--ac)}
+.phase-hd{padding:13px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.phase-hd:hover{background:rgba(255,255,255,.02)}
+.phase-wk{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em}
+.phase-title{font-size:14px;font-weight:600;color:var(--tx);margin-top:3px}
+.phase-chev{font-size:12px;color:var(--mu)}
+.phase-body{display:none;padding:0 16px 16px;border-top:1px solid var(--bd)}
+.phase-body.open{display:block}
+.phase-ov{font-size:13px;color:var(--mu2);padding:12px 0 10px;line-height:1.7}
+.drill{background:var(--bg);border-radius:8px;padding:12px 14px;border:1px solid var(--bd);margin-bottom:8px}
+.drill:last-child{margin-bottom:0}
+.drill-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:3px}
+.drill-sets{font-family:'DM Mono',monospace;font-size:11px;color:var(--ac);margin-bottom:6px}
+.drill-desc{font-size:12px;color:var(--mu2);line-height:1.55}
+.drill-cue{font-size:11px;color:var(--mu);font-style:italic;margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)}
+.pain-note{background:rgba(255,95,95,.05);border:1px solid rgba(255,95,95,.15);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:#c47070;line-height:1.5}
+.badge{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px;display:inline-block;margin-left:6px;vertical-align:middle}
+.badge-now{background:rgba(232,255,71,.1);color:var(--ac)}.badge-warn{background:rgba(255,179,71,.12);color:var(--am)}
+.alert{border-radius:10px;padding:13px 16px;margin-bottom:14px;font-size:13px;line-height:1.6;border:1px solid}
+.alert.warn{background:rgba(255,179,71,.06);border-color:rgba(255,179,71,.2);color:#d4a060}
+.alert.info{background:rgba(93,156,246,.06);border-color:rgba(93,156,246,.2);color:#8ab4f8}
+.alert-title{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.08em;margin-bottom:4px}
+.cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.cal-month{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900}
+.cal-arrow{background:var(--sf2);border:1px solid var(--bd2);border-radius:6px;color:var(--mu2);padding:4px 13px;cursor:pointer;font-size:16px;line-height:1.4}
+.cal-arrow:hover{color:var(--tx)}
+.cal-today-btn{font-family:'DM Mono',monospace;font-size:11px;background:rgba(232,255,71,.08);border:1px solid rgba(232,255,71,.25);color:var(--ac);border-radius:6px;padding:5px 12px;cursor:pointer}
+.cal-today-btn:hover{background:rgba(232,255,71,.15)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:13px}
+.cal-dow{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-align:center;padding:5px 0}
+.cal-cell{aspect-ratio:1;border-radius:7px;border:1px solid transparent;display:flex;align-items:center;justify-content:center;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;color:var(--mu2);position:relative;transition:all .12s}
+.cal-cell:hover{border-color:var(--bd2);color:var(--tx);background:var(--sf2)}
+.cal-cell.today{border-color:var(--ac);color:var(--ac);font-weight:700}
+.cal-cell.selected{background:var(--ac);color:#0a0a0b;border-color:var(--ac);font-weight:700}
+.cal-cell.has-a::after,.cal-cell.has-b::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%}
+.cal-cell.has-a::after{background:var(--gn)}.cal-cell.has-b::after{background:var(--bl)}
+.cal-cell.selected::after{background:#0a0a0b!important}
+.cal-cell.blank{pointer-events:none}
+.cal-sel-lbl{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu2);margin-bottom:12px}
+.cal-sel-lbl span{color:var(--ac)}
+.log-sess-pick{display:flex;gap:8px;margin-bottom:14px}
+.log-sess-pick button{flex:1;padding:9px;border-radius:8px;border:1px solid var(--bd2);background:var(--sf2);color:var(--mu2);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.log-sess-pick button.sel-a{background:rgba(232,255,71,.1);border-color:var(--ac);color:var(--ac)}
+.log-sess-pick button.sel-b{background:rgba(91,156,246,.1);border-color:var(--bl);color:var(--bl)}
+.log-ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+.log-ex-item{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;cursor:pointer;position:relative;transition:border-color .15s}
+.log-ex-item:hover{border-color:var(--bd2)}.log-ex-item.chk{border-color:var(--gn);background:rgba(61,220,132,.04)}
+.log-ex-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:2px}
+.log-ex-sets{font-family:'DM Mono',monospace;font-size:11px;color:var(--ac)}
+.ck-icon{position:absolute;top:10px;right:12px;color:var(--gn);font-size:14px;font-weight:700;display:none}
+.log-ex-item.chk .ck-icon{display:block}
+.hist-tbl{width:100%;font-size:12px;border-collapse:collapse}
+.hist-tbl th{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd)}
+.hist-tbl td{padding:8px 10px;border-bottom:1px solid var(--bd);color:var(--mu2);font-family:'DM Mono',monospace}
+.hist-tbl td:first-child{color:var(--tx);font-family:'Barlow',sans-serif}
+.slog-item{background:var(--sf2);border-radius:8px;padding:10px 13px;margin-bottom:8px}
+.slog-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.slog-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--mu)}
+.slog-tag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px}
+.slog-tag.a{background:rgba(61,220,132,.1);color:var(--gn)}.slog-tag.b{background:rgba(91,156,246,.1);color:var(--bl)}
+.slog-items{font-size:12px;color:var(--mu2)}
+textarea{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);font-family:'Barlow',sans-serif;font-size:14px;padding:12px 14px;outline:none;resize:vertical;min-height:80px;transition:border-color .15s;margin-bottom:10px}
+textarea:focus{border-color:var(--ac)}
+.note-item{padding:11px 0;border-bottom:1px solid var(--bd)}
+.note-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--mu);margin-bottom:3px}
+.note-text{font-size:13px;color:var(--mu2);line-height:1.5}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ac);color:#0a0a0b;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:640px){.stats{grid-template-columns:1fr 1fr}.input-row{grid-template-columns:1fr}.log-ex-grid{grid-template-columns:1fr}.sess-pick{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="logo-tag">Left knee · Patellar graft</span>
+      <span class="logo-h">ACL Recovery</span>
+    </div>
+    <div class="hright">
+      <div>Post-op day <b id="h-dpo">-</b></div>
+      <div><b id="h-dtg">-</b> days to Jun 26</div>
+    </div>
+  </header>
+  <nav>
+    <button class="nb on" onclick="goTab('dash',this)">Dashboard</button>
+    <button class="nb" onclick="goTab('pistol',this)">Pistol Plan</button>
+    <button class="nb" onclick="goTab('logit',this)">Log</button>
+    <button class="nb" onclick="goTab('history',this)">History</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="tab on" id="tab-dash">
+    <div class="today-card">
+      <div class="tc-top">
+        <div class="tc-date" id="tc-date">-</div>
+        <div class="tc-row">
+          <div class="tc-title" id="tc-title">Today's Workout</div>
+          <div class="tc-dur" id="tc-dur">-</div>
+        </div>
+        <div class="sess-pick">
+          <button class="spb" id="btn-a" onclick="pickSess('A')">Session A — Quad Volume</button>
+          <button class="spb" id="btn-b" onclick="pickSess('B')">Session B — Stability</button>
+          <button class="spb" id="btn-r" onclick="pickSess('R')">Rest Day</button>
+        </div>
+      </div>
+      <div id="workout-body"></div>
+      <div id="prog-foot" style="display:none" class="prog-foot">
+        <div class="ring">
+          <svg width="46" height="46" viewBox="0 0 46 46">
+            <circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="4"/>
+            <circle id="ring-arc" cx="23" cy="23" r="19" fill="none" stroke="#e8ff47" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="119.4"/>
+          </svg>
+          <div class="ring-pct" id="ring-pct">0%</div>
+        </div>
+        <div style="flex:1">
+          <div class="ring-done" id="ring-done">0 / 0 done</div>
+          <div class="ring-sub">tap to check off</div>
+        </div>
+        <button class="log-btn" id="main-log-btn" onclick="logToday()" disabled>Log session</button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat gn"><div class="stat-lbl">Quad symmetry</div><div class="stat-val" id="s-sym">-</div><div class="stat-sub">goal: 90%+</div></div>
+      <div class="stat am"><div class="stat-lbl">Circ gap cm</div><div class="stat-val" id="s-gap">-</div><div class="stat-sub">goal: 0 cm</div></div>
+      <div class="stat bl"><div class="stat-lbl">Pistol squats</div><div class="stat-val" id="s-pis">-</div><div class="stat-sub">goal: 10 reps</div></div>
+      <div class="stat ac"><div class="stat-lbl">Days to appt</div><div class="stat-val" id="s-dtg">-</div><div class="stat-sub">Jun 26, 2026</div></div>
+    </div>
+    <div class="sec-h">Goal progress</div>
+    <div class="pbar-block"><div class="pbar-row"><span class="pbar-name">Quad strength symmetry</span><span class="pbar-num" id="pb-sl">-</span></div><div class="bar"><div class="bar-fill fill-gn" id="pb-sb" style="width:0%"></div></div></div>
+    <div class="pbar-block"><div class="pbar-row"><span class="pbar-name">Circumference gap closed</span><span class="pbar-num" id="pb-cl">-</span></div><div class="bar"><div class="bar-fill fill-am" id="pb-cb" style="width:0%"></div></div></div>
+    <div class="pbar-block"><div class="pbar-row"><span class="pbar-name">Pistol squats</span><span class="pbar-num" id="pb-pl">-</span></div><div class="bar"><div class="bar-fill fill-bl" id="pb-pb" style="width:0%"></div></div></div>
+    <hr class="div">
+    <div class="sec-h">Update measurements</div>
+    <div class="input-row">
+      <div class="field"><label>Symmetry %</label><input type="number" id="in-s" min="0" max="100" step="0.1" placeholder="83.3"></div>
+      <div class="field"><label>Circ gap (cm)</label><input type="number" id="in-c" min="0" max="6" step="0.1" placeholder="3.0"></div>
+      <div class="field"><label>Pistol reps</label><input type="number" id="in-p" min="0" max="10" step="1" placeholder="0"></div>
+    </div>
+    <button class="btn" onclick="saveMetrics()">Save update</button>
+    <hr class="div">
+    <div class="sec-h">Pistol squat log</div>
+    <div class="p10" id="pistol-grid"></div>
+    <hr class="div">
+    <div class="sec-h">Milestones</div>
+    <div class="tl">
+      <div class="tl-item"><div class="tl-dot done"></div><div class="tl-date">Dec 11, 2025</div><div class="tl-title">Surgery — patellar tendon graft</div></div>
+      <div class="tl-item"><div class="tl-dot done"></div><div class="tl-date">Mar 19, 2026</div><div class="tl-title">Started jogging</div><div class="tl-sub">3.3 months post-op</div></div>
+      <div class="tl-item"><div class="tl-dot now"></div><div class="tl-date">Mar 23, 2026</div><div class="tl-title">3-month surgeon check</div><div class="tl-sub">83.3% symmetry · 3 cm gap</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">~Apr 14, 2026</div><div class="tl-title">First box pistol squat</div><div class="tl-sub">Week 18 — patellar graft safe window</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">~May 12, 2026</div><div class="tl-title">5 unassisted pistol squats</div></div>
+      <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">~Jun 1, 2026</div><div class="tl-title">90%+ symmetry target</div></div>
+      <div class="tl-item"><div class="tl-dot goal"></div><div class="tl-date">Jun 26, 2026</div><div class="tl-title">6-month appointment</div><div class="tl-sub">10 pistols · gap closed · surgeon clearance</div></div>
+    </div>
+  </div>
+
+  <!-- PISTOL PLAN -->
+  <div class="tab" id="tab-pistol">
+    <div class="alert warn"><div class="alert-title">Patellar graft reality</div>The donor site sits directly in the force path of deep knee flexion. Anterior knee pain is tissue signaling, not a mental block. Ham graft athletes start pistols at week 12–14. Week 16–18 is your safe window.</div>
+    <div class="alert info"><div class="alert-title">First pistol target: week 16–18 (Apr 7–21)</div>Use the next 3 weeks to build prerequisites. Click each phase to expand.</div>
+    <div class="phase active-phase" id="ph-0">
+      <div class="phase-hd" onclick="togglePhase('ph-0')"><div><div class="phase-wk">Now to Week 16 · Mar 23 – Apr 7</div><div class="phase-title">Phase 0 — Prerequisites<span class="badge badge-now">Active now</span></div></div><span class="phase-chev" id="chev-ph-0">▼</span></div>
+      <div class="phase-body open" id="body-ph-0">
+        <div class="phase-ov">No deep flexion. 15 minutes daily. Build motor pattern and ankle mobility so week 16 is just adding depth. TKE and wall sit are in your gym sessions — skip those here on training days.</div>
+        <div class="drill"><div class="drill-name">Single-leg box sit (above parallel)</div><div class="drill-sets">3 × 8 each · daily</div><div class="drill-desc">Box just above knee height. 3-sec lower, touch lightly, drive back up. Never past 90°. Motor control and light quad load without touching the donor site range.</div><div class="drill-cue">Push the floor away going up. Squeeze the glute hard at lockout.</div></div>
+        <div class="drill"><div class="drill-name">Wall-assisted single-leg lowering</div><div class="drill-sets">3 × 6 left · daily</div><div class="drill-desc">Fingertips on wall, balance only. Right leg extended. Bend left knee to 70–80°, hold 2 sec, return. Builds eccentric quad strength at safe depth. Knee tracks over the second toe — no caving.</div><div class="drill-cue">Imagine a laser on your kneecap pointing forward. Keep it tracking straight.</div></div>
+        <div class="drill"><div class="drill-name">Ankle dorsiflexion stretch</div><div class="drill-sets">2 × 40s each · daily</div><div class="drill-desc">Lunge position, drive knee forward over pinky toe keeping heel down. Tight ankles cause forward lean during pistols and shift load to the knee. Fix this now or it'll be your limiter at week 16.</div><div class="drill-cue">Heel must stay glued to the floor. If it lifts, back off 1 cm and hold there.</div></div>
+        <div class="pain-note">If you feel anterior knee pain during wall lowering even at 70°, stay at pain-free range. Preparation, not provocation.</div>
+      </div>
+    </div>
+    <div class="phase" id="ph-1">
+      <div class="phase-hd" onclick="togglePhase('ph-1')"><div><div class="phase-wk">Week 16–17 · Apr 7–14</div><div class="phase-title">Phase 1 — High box pistol</div></div><span class="phase-chev" id="chev-ph-1">▶</span></div>
+      <div class="phase-body" id="body-ph-1">
+        <div class="phase-ov">First real pistol reps. Box limits depth to a safe range. Zero anterior knee pain is the standard — not manageable, zero.</div>
+        <div class="drill"><div class="drill-name">High box pistol squat</div><div class="drill-sets">3 × 5 left only · every other day</div><div class="drill-desc">Box at knee height. Sit back not down. 3–4 sec lower, lightly touch, drive up through heel. Keeping shin more vertical reduces donor site shear dramatically. Ice 10 min after. 90s rest between sets.</div><div class="drill-cue">"Reach hips back toward a chair behind you" — not "press knee forward."</div></div>
+        <div class="drill"><div class="drill-name">Counterbalance hold at bottom</div><div class="drill-sets">3 × 3 holds · 3 sec each · left</div><div class="drill-desc">Hold 2–5 lb weight extended in front. Lower to box, hold 3 sec. Counterbalance shifts center of mass forward and actually reduces knee stress. Builds bottom-position confidence.</div><div class="drill-cue">Holding weight out front reduces donor site load — counterintuitive but true.</div></div>
+        <div class="pain-note">Stop if: sharp pain at donor site or increased swelling next morning. General soreness is fine. Sharp anterior pain = one more week of phase 0.</div>
+      </div>
+    </div>
+    <div class="phase" id="ph-2">
+      <div class="phase-hd" onclick="togglePhase('ph-2')"><div><div class="phase-wk">Week 17–19 · Apr 14–28</div><div class="phase-title">Phase 2 — Progressive box lowering</div></div><span class="phase-chev" id="chev-ph-2">▶</span></div>
+      <div class="phase-body" id="body-ph-2">
+        <div class="phase-ov">Drop box 2–3 inches every 2–3 sessions only if last depth was pain-free. By end of phase, box is at calf height. 3-sec eccentric every rep is mandatory.</div>
+        <div class="drill"><div class="drill-name">Progressive box pistol</div><div class="drill-sets">3 × 5 left · every other day · drop box 2–3" per 2–3 sessions</div><div class="drill-desc">Start at knee height, progress to mid-shin, then calf height over 2 weeks. Two pain-free sessions at each depth before dropping. Track the height each session.</div><div class="drill-cue">Rushing depth is how you get patellar tendinopathy on top of ACL recovery. Pain-free × 2, no exceptions.</div></div>
+        <div class="drill"><div class="drill-name">Pistol negative (eccentric only)</div><div class="drill-sets">3 × 4 left · 5-sec lowering · end of session</div><div class="drill-desc">Lower to full pistol depth over 5 seconds, use both legs to stand back up. Most powerful hypertrophy method with less graft strain than full reps.</div><div class="drill-cue">Use TRX for balance. The slow lowering is the entire point.</div></div>
+        <div class="pain-note">Morning-after swelling is your best indicator. Puffier than normal = that depth was too much. Stay at that height two more sessions.</div>
+      </div>
+    </div>
+    <div class="phase" id="ph-3">
+      <div class="phase-hd" onclick="togglePhase('ph-3')"><div><div class="phase-wk">Week 19–22 · Apr 28 – May 19</div><div class="phase-title">Phase 3 — Freestanding pistol</div></div><span class="phase-chev" id="chev-ph-3">▶</span></div>
+      <div class="phase-body" id="body-ph-3">
+        <div class="phase-ov">Box comes out. Goal by end of phase: 5 clean unassisted reps on the left leg. Donor site sensitivity should be reducing significantly around weeks 18–20.</div>
+        <div class="drill"><div class="drill-name">TRX-assisted freestanding pistol</div><div class="drill-sets">3 × 5 left · weeks 19–20</div><div class="drill-desc">Hold TRX with just enough tension to not fall — offload ~10–15%. No box. Full depth, 1-sec pause at bottom, drive up. Non-working leg extended parallel to floor throughout.</div><div class="drill-cue">Tight hip flexors cause the free leg to droop — stretch them after every session.</div></div>
+        <div class="drill"><div class="drill-name">Freestanding pistol squat</div><div class="drill-sets">Build to 3 × 5 left · weeks 21–22</div><div class="drill-desc">No assistance. Arms forward as counterbalance. Slow lower, 1-sec pause at bottom, drive up through heel. Goal: 5 clean reps by end of week 22.</div><div class="drill-cue">If you fall you'll fall forward — that means weight is in the right place (heel).</div></div>
+        <div class="pain-note">If anterior knee pain returns when the box is removed, go back to a 4-inch box for one more week. Normal variance.</div>
+      </div>
+    </div>
+    <div class="phase" id="ph-4">
+      <div class="phase-hd" onclick="togglePhase('ph-4')"><div><div class="phase-wk">Week 22–26 · May 19 – Jun 26</div><div class="phase-title">Phase 4 — Build to 10 reps<span class="badge badge-warn">Appointment goal</span></div></div><span class="phase-chev" id="chev-ph-4">▶</span></div>
+      <div class="phase-body" id="body-ph-4">
+        <div class="phase-ov">Add 1–2 reps per week. Clean mechanics matter as much as the number. A controlled 8 is more convincing than a sloppy 10.</div>
+        <div class="drill"><div class="drill-name">Pistol rep progression</div><div class="drill-sets">Wk22: 2×5 · Wk23: 2×6 · Wk24: 2×7 · Wk25: 1×10 · Wk26: test set</div><div class="drill-desc">Add 1 rep per set per week. Week 26: 10 clean reps, left leg, no assistance. Check: full depth (hip crease below knee), free leg parallel to floor, nothing touched.</div><div class="drill-cue">Do the test set 2–3 days before the appointment. Show up rested.</div></div>
+        <div class="drill"><div class="drill-name">Symmetry check — back to back</div><div class="drill-sets">1×5 left into 1×5 right · no rest · weeks 24–26</div><div class="drill-desc">If left matches right you have a strong argument for clearance. This is your weekly self-assessment tool.</div><div class="drill-cue">Left matches right = ready to make the case for return to sport.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="tab" id="tab-logit">
+    <div class="alert info"><div class="alert-title">Log a session</div>Green dot = Session A logged. Blue dot = Session B. Pick a day, pick the session, check off what you did, save.</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap">
+      <button class="cal-today-btn" onclick="calJumpToday()">Jump to today</button>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--mu)">or browse any day in 2026</span>
+    </div>
+    <div class="cal-nav-row">
+      <button class="cal-arrow" onclick="calPrev()">&#8249;</button>
+      <span class="cal-month" id="cal-month-lbl">-</span>
+      <button class="cal-arrow" onclick="calNext()">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-sel-lbl">Logging for: <span id="cal-sel-lbl">-</span></div>
+    <div class="log-sess-pick">
+      <button id="log-btn-a" onclick="setLogSess('A')">Session A — Quad Volume</button>
+      <button id="log-btn-b" onclick="setLogSess('B')">Session B — Stability</button>
+    </div>
+    <div class="log-ex-grid" id="log-ex-grid"></div>
+    <button class="btn" onclick="saveLogSess()">Save session log</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="tab" id="tab-history">
+    <div class="sec-h">Weekly notes</div>
+    <textarea id="note-in" placeholder="How's the knee feeling? Pain patterns, wins, setbacks..."></textarea>
+    <button class="btn btn-ghost" onclick="saveNote()" style="margin-bottom:20px">Save note</button>
+    <div id="notes-list"></div>
+    <hr class="div">
+    <div class="sec-h">Measurement history</div>
+    <table class="hist-tbl"><thead><tr><th>Date</th><th>Symmetry</th><th>Gap</th><th>Pistols</th></tr></thead><tbody id="meas-body"></tbody></table>
+    <hr class="div">
+    <div class="sec-h">Session log</div>
+    <div id="sess-hist"></div>
+  </div>
+</div>
+<div class="toast" id="toast">Saved</div>
+
+<script>
+// ── localStorage persistence ─────────────────────────────────────────────
+var STORAGE_KEY = 'acl_recovery_v1';
+var DEF = {quadSymmetry:83.3,circGap:3.0,pistolReps:0,log:[],outsidePTLog:{},weeklyNotes:[]};
+
+function load() {
+  try { var d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : Object.assign({},DEF); }
+  catch(e) { return Object.assign({},DEF); }
+}
+function save(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) { console.error('Save failed',e); }
+}
+
+// ── Exercise data ────────────────────────────────────────────────────────
+var SEA = [
+  {id:'lp', name:'Single-leg press', sets:'5×12 left · 3×12 right', tag:'left', desc:'Full ROM, push through heel. Left gets 2 extra sets — primary gap-closer.', cue:'3-sec lowering every rep. The eccentric is the hypertrophy stimulus.'},
+  {id:'bss',name:'Bulgarian split squat', sets:'4×10 left · 3×10 right', tag:'left', desc:'Rear foot elevated, front foot forward enough that shin stays vertical. Lower until back knee nearly touches. Bodyweight first, add dumbbells when easy.', cue:'Lead left first. Feel it in the front quad — if all hip flexor, step front foot further forward.'},
+  {id:'le', name:'Leg extension — slow eccentric', sets:'4×12 · 1-sec up · 4-sec down', tag:'both', desc:'Full ROM from fully bent. 4-sec lowering targets the VMO (inner quad above kneecap) — most atrophied after ACL surgery and main driver of your gap.', cue:'Feel the burn in the inner quad just above the kneecap. Only mid-thigh? Slow down more.'},
+  {id:'ws', name:'Wall sit — left leg only', sets:'4×45s left only', tag:'left', desc:'Back flat on wall, thigh parallel at 90°. Left leg only. Isometric quad loading with near-zero joint stress.', cue:'Press the back of the knee toward the floor — activates quad fully instead of shifting to hip.'},
+  {id:'tke',name:'Terminal knee extension', sets:'3×20 left · 3×15 right', tag:'both', desc:'Band anchored low behind knee. From slight bend, drive to full extension. Isolates last 20–30° of quad contraction — most atrophied post-surgery.', cue:'Hold lockout 1 full second each rep. The squeeze at full extension is the entire point.'}
+];
+var SEB = [
+  {id:'su', name:'Step-up with knee drive', sets:'3×12 left · 2×12 right', tag:'left', desc:'10–12 inch box. Step up with left foot, drive right knee to hip height, hold 1 sec, step down with control. Left leg does 100% of the work up.', cue:"Don't push off the back foot. If you are, the box is too high."},
+  {id:'rdl',name:'Single-leg RDL', sets:'3×10 each', tag:'both', desc:'Dumbbell in opposite hand. Hinge at hip, lower toward floor while back leg extends behind. Builds posterior chain essential for knee stability.', cue:'"Push the floor back with the standing heel" — not "bend forward." Hip hinge is the movement.'},
+  {id:'lbw',name:'Lateral band walk', sets:'3×15 steps each direction', tag:'both', desc:'Band above knees, slight squat maintained. Controlled steps, feet never fully together. Trains glute med — essential for cutting stability. Weak glute med = knee collapse = re-injury risk.', cue:'Burn should be in outer hip, not thigh. If thigh, get lower.'},
+  {id:'ws2',name:'Wall sit — left leg only', sets:'3×45s left only', tag:'left', desc:'Same as Session A. Included in both sessions because the volume matters for closing the gap.', cue:'Press the back of the knee toward the floor the whole hold.'},
+  {id:'tke2',name:'Terminal knee extension', sets:'3×20 left · 3×15 right', tag:'both', desc:'Every single session — 3 minutes, outsized impact on symmetry test scores.', cue:'Hold lockout 1 second each rep without exception.'}
+];
+
+function getPistolWork(weeks) {
+  if (weeks < 16) return [
+    {id:'pbs',name:'Single-leg box sit (above parallel)',sets:'3×8 each · daily',tag:'pt',desc:'Box above knee height, 3-sec lower, touch lightly, drive back up. Never past 90°.',cue:'Push the floor away going up. Squeeze glute hard at lockout.'},
+    {id:'wal',name:'Wall-assisted single-leg lowering',sets:'3×6 left · daily',tag:'pt',desc:'Fingertips on wall. Bend left knee to 70–80°, hold 2 sec, return.',cue:'Knee tracks over second toe the whole rep.'},
+    {id:'ank',name:'Ankle dorsiflexion stretch',sets:'2×40s each · daily',tag:'pt',desc:'Lunge position, drive knee forward keeping heel down. Fix this now.',cue:'Heel stays glued. If it lifts, back off.'}
+  ];
+  if (weeks < 18) return [
+    {id:'hbp',name:'High box pistol squat',sets:'3×5 left only · every other day',tag:'pt',desc:'Box at knee height. Sit back not down. 3–4 sec lower, lightly touch, drive up. Zero anterior pain standard. Ice 10 min after.',cue:'"Reach hips back" not "press knee forward."'},
+    {id:'cbh',name:'Counterbalance hold at bottom',sets:'3×3 holds · 3 sec each',tag:'pt',desc:'2–5 lb weight extended in front. Lower to box, hold 3 sec. Reduces knee stress and builds bottom confidence.',cue:'Holding weight out front reduces donor site load.'}
+  ];
+  if (weeks < 22) return [
+    {id:'pbp',name:'Progressive box pistol',sets:'3×5 left · drop box 2–3" per 2 pain-free sessions',tag:'pt',desc:'Work from knee height to calf height. 3-sec eccentric every rep. Pain-free × 2 before dropping.',cue:'Rushing = patellar tendinopathy risk. No exceptions.'},
+    {id:'pneg',name:'Pistol negative (eccentric only)',sets:'3×4 left · 5-sec lowering',tag:'pt',desc:'Lower to full depth over 5 seconds, stand up with both legs.',cue:'The slow lowering is the entire point.'}
+  ];
+  return [
+    {id:'fsp',name:'Freestanding pistol squat',sets:'Build toward 10 reps by Jun 26',tag:'pt',desc:'No assistance. Arms forward as counterbalance. Full depth, free leg parallel to floor.',cue:'Forward fall = correct form (weight in heel).'}
+  ];
+}
+
+// ── App state ────────────────────────────────────────────────────────────
+var todaySess = 'A';
+var checkedToday = {};
+var calYear = new Date().getFullYear();
+var calMonth = new Date().getMonth();
+var calSelDay = new Date().toISOString().split('T')[0];
+var logSess = 'A';
+var logChecked = {};
+
+function postOpWeeks() {
+  return Math.floor(Math.round((Date.now() - new Date('2025-12-11').getTime()) / 86400000) / 7);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────
+function init() { renderAll(); }
+
+function renderAll() {
+  var st = load();
+  var now = new Date();
+  var dpo = Math.round((now - new Date('2025-12-11')) / 86400000);
+  var dtg = Math.round((new Date('2026-06-26') - now) / 86400000);
+  document.getElementById('h-dpo').textContent = dpo;
+  document.getElementById('h-dtg').textContent = dtg;
+  document.getElementById('s-dtg').textContent = dtg;
+
+  var s = st.quadSymmetry || 83.3;
+  var c = st.circGap !== undefined ? st.circGap : 3.0;
+  var p = st.pistolReps || 0;
+
+  document.getElementById('s-sym').textContent = s.toFixed(1) + '%';
+  document.getElementById('s-gap').textContent = c.toFixed(1);
+  document.getElementById('s-pis').textContent = p;
+  document.getElementById('pb-sl').textContent = s.toFixed(1) + '% / 90%';
+  document.getElementById('pb-sb').style.width = Math.min((s/90)*100,100).toFixed(1) + '%';
+  var cp = Math.max(0,Math.round((1-c/3)*100));
+  document.getElementById('pb-cl').textContent = c.toFixed(1) + 'cm remaining';
+  document.getElementById('pb-cb').style.width = cp + '%';
+  document.getElementById('pb-pl').textContent = p + ' / 10';
+  document.getElementById('pb-pb').style.width = (p*10) + '%';
+  document.getElementById('in-s').placeholder = s.toFixed(1);
+  document.getElementById('in-c').placeholder = c.toFixed(1);
+  document.getElementById('in-p').placeholder = p;
+
+  renderPistolGrid(p);
+  renderTodayCard();
+  renderCalendar();
+  renderLogTab();
+  renderHistory();
+}
+
+// ── Today card ───────────────────────────────────────────────────────────
+function pickSess(s) { todaySess = s; checkedToday = {}; renderTodayCard(); }
+
+function renderTodayCard() {
+  var now = new Date();
+  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('tc-date').textContent = DAYS[now.getDay()] + ' · ' + MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  document.getElementById('btn-a').className = 'spb' + (todaySess==='A'?' sel-a':'');
+  document.getElementById('btn-b').className = 'spb' + (todaySess==='B'?' sel-b':'');
+  document.getElementById('btn-r').className = 'spb' + (todaySess==='R'?' sel-r':'');
+
+  var body = document.getElementById('workout-body');
+  var foot = document.getElementById('prog-foot');
+
+  if (todaySess === 'R') {
+    document.getElementById('tc-title').textContent = 'Rest Day';
+    document.getElementById('tc-dur').textContent = 'recovery';
+    foot.style.display = 'none';
+    body.innerHTML = '<div class="rest-msg"><h3>Rest. Recover. Grow.</h3><p>Foam roll quads (avoid patellar tendon directly). Hip flexor stretch 3×40s. Light walk if you feel like it. This is when the muscle actually grows.</p></div>';
+    return;
+  }
+
+  var gymItems = todaySess === 'A' ? SEA : SEB;
+  var gymIds = gymItems.map(function(x){return x.id;});
+  var pistolItems = getPistolWork(postOpWeeks()).filter(function(x){return gymIds.indexOf(x.id)===-1;});
+  var gymMins = todaySess==='A'?40:35;
+  var pistolMins = postOpWeeks()<16?15:20;
+  var totalMins = gymMins + (pistolItems.length>0?pistolMins:0);
+
+  document.getElementById('tc-title').textContent = todaySess==='A'?'Session A — Quad Volume':'Session B — Stability';
+  document.getElementById('tc-dur').textContent = '~' + totalMins + ' min';
+  foot.style.display = 'flex';
+
+  var html = '<div class="sec-block"><div class="sec-lbl gym">Gym workout<span class="est">~'+gymMins+' min</span></div>';
+  gymItems.forEach(function(ex){
+    var done = !!checkedToday[ex.id];
+    html += '<div class="witem"><div class="wcheck'+(done?' done':'')+'" onclick="checkItem(\''+ex.id+'\')">'+(done?'&#10003;':'')+' </div><div class="wbody"><div class="wname">'+ex.name+'</div><div class="wsets">'+ex.sets+'</div><div class="wdesc">'+ex.desc+'</div><div class="wcue">'+ex.cue+'</div><span class="wtag '+(ex.tag==='left'?'left':'both')+'">'+(ex.tag==='left'?'Left focus':'Both legs')+'</span></div></div>';
+  });
+  html += '</div>';
+
+  if (pistolItems.length > 0) {
+    html += '<div class="sec-block"><div class="sec-lbl pistol-lbl">Pistol plan — week '+postOpWeeks()+'<span class="est">~'+pistolMins+' min</span></div>';
+    pistolItems.forEach(function(ex){
+      var done = !!checkedToday[ex.id];
+      html += '<div class="witem"><div class="wcheck'+(done?' done':'')+'" onclick="checkItem(\''+ex.id+'\')">'+(done?'&#10003;':'')+' </div><div class="wbody"><div class="wname">'+ex.name+'</div><div class="wsets">'+ex.sets+'</div><div class="wdesc">'+ex.desc+'</div><div class="wcue">'+ex.cue+'</div><span class="wtag pt">Pistol plan</span></div></div>';
+    });
+    html += '</div>';
+  }
+  body.innerHTML = html;
+  updateRing(gymItems.length + pistolItems.length);
+}
+
+function checkItem(id) {
+  checkedToday[id] = !checkedToday[id];
+  var gymItems = todaySess==='A'?SEA:SEB;
+  var gymIds = gymItems.map(function(x){return x.id;});
+  var pistolItems = getPistolWork(postOpWeeks()).filter(function(x){return gymIds.indexOf(x.id)===-1;});
+  var total = gymItems.length + pistolItems.length;
+  var el = document.querySelector('[onclick="checkItem(\''+id+'\')"]');
+  if (el) { if(checkedToday[id]){el.classList.add('done');el.innerHTML='&#10003; ';}else{el.classList.remove('done');el.innerHTML=' ';} }
+  updateRing(total);
+}
+
+function updateRing(total) {
+  var done = Object.values(checkedToday).filter(Boolean).length;
+  var pct = total>0?Math.round((done/total)*100):0;
+  document.getElementById('ring-arc').setAttribute('stroke-dashoffset',(119.4-(pct/100)*119.4).toFixed(1));
+  document.getElementById('ring-pct').textContent = pct+'%';
+  document.getElementById('ring-done').textContent = done+' / '+total+' done';
+  document.getElementById('main-log-btn').disabled = done===0;
+}
+
+function logToday() {
+  var today = new Date().toISOString().split('T')[0];
+  var checked = Object.keys(checkedToday).filter(function(k){return checkedToday[k];});
+  var d = load();
+  if (!d.outsidePTLog) d.outsidePTLog = {};
+  d.outsidePTLog[today] = {session:todaySess, checked:checked};
+  save(d);
+  toast('Session logged!');
+  checkedToday = {};
+  renderAll();
+}
+
+// ── Pistol grid ──────────────────────────────────────────────────────────
+function renderPistolGrid(current) {
+  var g = document.getElementById('pistol-grid'); g.innerHTML='';
+  for (var i=1;i<=10;i++) {
+    var b=document.createElement('div');
+    b.className='pbox'+(i<=current?' lit':'');
+    b.textContent=i;
+    (function(n){b.onclick=function(){var nv=n<=current?n-1:n;document.getElementById('in-p').value=nv;renderPistolGrid(nv);};})(i);
+    g.appendChild(b);
+  }
+}
+
+function togglePhase(id) {
+  var body=document.getElementById('body-'+id);var chev=document.getElementById('chev-'+id);
+  var open=body.classList.contains('open');body.classList.toggle('open',!open);chev.textContent=open?'▶':'▼';
+}
+
+// ── Calendar ─────────────────────────────────────────────────────────────
+function renderCalendar() {
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-lbl').textContent=MONTHS[calMonth]+' '+calYear;
+  var grid=document.getElementById('cal-grid');grid.innerHTML='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){var el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+  var firstDay=new Date(calYear,calMonth,1).getDay();
+  var dim=new Date(calYear,calMonth+1,0).getDate();
+  var today=new Date().toISOString().split('T')[0];
+  var st=load();
+  for(var i=0;i<firstDay;i++){var b=document.createElement('div');b.className='cal-cell blank';grid.appendChild(b);}
+  for(var d=1;d<=dim;d++){
+    var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var el=document.createElement('div');
+    var cls='cal-cell';
+    if(ds===today)cls+=' today';if(ds===calSelDay)cls+=' selected';
+    var logged=st.outsidePTLog&&st.outsidePTLog[ds];
+    if(logged&&logged.session==='A')cls+=' has-a';else if(logged&&logged.session==='B')cls+=' has-b';
+    el.className=cls;el.textContent=d;
+    (function(dateStr){el.onclick=function(){calSelDay=dateStr;logChecked={};renderCalendar();renderLogTab();};})(ds);
+    grid.appendChild(el);
+  }
+  var fmt=new Date(calSelDay+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('cal-sel-lbl').textContent=fmt;
+}
+function calJumpToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();calSelDay=new Date().toISOString().split('T')[0];logChecked={};renderCalendar();renderLogTab();}
+function calPrev(){if(calMonth===0){calYear--;calMonth=11;}else{calMonth--;}renderCalendar();}
+function calNext(){if(calMonth===11){calYear++;calMonth=0;}else{calMonth++;}renderCalendar();}
+
+// ── Log tab ──────────────────────────────────────────────────────────────
+function setLogSess(s){logSess=s;logChecked={};renderLogTab();}
+function renderLogTab(){
+  var st=load();var existing=st.outsidePTLog&&st.outsidePTLog[calSelDay];
+  if(existing&&existing.session&&!Object.keys(logChecked).length){logSess=existing.session;(existing.checked||[]).forEach(function(k){logChecked[k]=true;});}
+  document.getElementById('log-btn-a').className=logSess==='A'?'sel-a':'';
+  document.getElementById('log-btn-b').className=logSess==='B'?'sel-b':'';
+  var items=logSess==='A'?SEA:SEB;
+  var g=document.getElementById('log-ex-grid');g.innerHTML='';
+  items.forEach(function(ex){
+    var chk=!!logChecked[ex.id];
+    var el=document.createElement('div');el.className='log-ex-item'+(chk?' chk':'');
+    el.innerHTML='<div class="log-ex-name">'+ex.name+'</div><div class="log-ex-sets">'+ex.sets+'</div><div class="ck-icon">&#10003;</div>';
+    (function(id,elem){elem.onclick=function(){logChecked[id]=!logChecked[id];elem.classList.toggle('chk',!!logChecked[id]);};})(ex.id,el);
+    g.appendChild(el);
+  });
+}
+function saveLogSess(){
+  var d=load();if(!d.outsidePTLog)d.outsidePTLog={};
+  d.outsidePTLog[calSelDay]={session:logSess,checked:Object.keys(logChecked).filter(function(k){return logChecked[k];})};
+  save(d);toast('Logged for '+calSelDay);logChecked={};renderAll();
+}
+
+// ── History ──────────────────────────────────────────────────────────────
+function renderHistory(){
+  var st=load();
+  var tbody=document.getElementById('meas-body');tbody.innerHTML='';
+  var entries=st.log||[];
+  if(!entries.length){tbody.innerHTML='<tr><td colspan="4" style="color:var(--mu);padding:14px 10px;font-style:italic">No entries yet</td></tr>';}
+  else{entries.slice(0,30).forEach(function(e){var tr=document.createElement('tr');tr.innerHTML='<td>'+e.date+'</td><td>'+(e.quadSymmetry!==undefined?e.quadSymmetry.toFixed(1)+'%':'—')+'</td><td>'+(e.circGap!==undefined?e.circGap.toFixed(1)+'cm':'—')+'</td><td>'+(e.pistolReps!==undefined?e.pistolReps:'—')+'</td>';tbody.appendChild(tr);});}
+  var sh=document.getElementById('sess-hist');sh.innerHTML='';
+  var ptLog=st.outsidePTLog||{};var dates=Object.keys(ptLog).sort().reverse().slice(0,20);
+  if(!dates.length){sh.innerHTML='<div style="font-size:13px;color:var(--mu);font-style:italic">No sessions logged yet</div>';}
+  else{dates.forEach(function(d){var entry=ptLog[d];if(!entry||!entry.session)return;var allItems=entry.session==='A'?SEA:SEB;var names=(entry.checked||[]).map(function(id){var f=allItems.find(function(x){return x.id===id;});return f?f.name:id;});var div=document.createElement('div');div.className='slog-item';div.innerHTML='<div class="slog-head"><span class="slog-date">'+d+'</span><span class="slog-tag '+(entry.session==='A'?'a':'b')+'">Session '+entry.session+'</span></div><div class="slog-items">'+(names.length?names.join(' · '):'No exercises checked')+'</div>';sh.appendChild(div);});}
+  var nl=document.getElementById('notes-list');nl.innerHTML='';
+  (st.weeklyNotes||[]).forEach(function(n){var div=document.createElement('div');div.className='note-item';div.innerHTML='<div class="note-date">'+n.date+'</div><div class="note-text">'+n.text+'</div>';nl.appendChild(div);});
+}
+
+// ── Metrics ──────────────────────────────────────────────────────────────
+function saveMetrics(){
+  var s=parseFloat(document.getElementById('in-s').value);
+  var c=parseFloat(document.getElementById('in-c').value);
+  var p=parseInt(document.getElementById('in-p').value);
+  var d=load();
+  if(!isNaN(s))d.quadSymmetry=s;if(!isNaN(c))d.circGap=c;if(!isNaN(p))d.pistolReps=p;
+  if(!isNaN(s)||!isNaN(c)||!isNaN(p)){d.log.unshift({date:new Date().toISOString().split('T')[0],quadSymmetry:d.quadSymmetry,circGap:d.circGap,pistolReps:d.pistolReps});if(d.log.length>90)d.log=d.log.slice(0,90);}
+  save(d);
+  document.getElementById('in-s').value='';document.getElementById('in-c').value='';document.getElementById('in-p').value='';
+  toast('Saved');renderAll();
+}
+function saveNote(){
+  var text=document.getElementById('note-in').value.trim();if(!text)return;
+  var d=load();if(!d.weeklyNotes)d.weeklyNotes=[];
+  d.weeklyNotes.unshift({date:new Date().toISOString().split('T')[0],text:text});
+  if(d.weeklyNotes.length>20)d.weeklyNotes=d.weeklyNotes.slice(0,20);
+  save(d);document.getElementById('note-in').value='';toast('Note saved');renderAll();
+}
+
+// ── Nav / toast ──────────────────────────────────────────────────────────
+function goTab(name,btn){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('tab-'+name).classList.add('on');btn.classList.add('on');
+}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}
+
+init();
+</script>
+</body>
+</html>
